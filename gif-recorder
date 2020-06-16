@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# AUTHOR:   (c) Aubin LORIEUX W 2020
+# DESCRIPTION:  A script to record GIF screencasts.
+# LICENSE:  GNU GPL v3 (http://www.gnu.org/licenses/gpl.html)
+# DEPENDENCIES:   byzanz,zenity,notify-send,slop
+
+set -e
+
+# Time and date
+TIME=$(date +"%Y-%m-%d_%H%M%S")
+
+# Delay before starting
+DELAY=3
+
+# Standard screencast folder
+FOLDER="$HOME/Pictures/Gifs"
+
+# Filename
+FILENAME="$FOLDER/GIFrecord_$TIME.gif"
+
+# Default recording duration
+DEFDUR=10
+
+# Custom recording duration as set by user
+USERDUR=$(zenity --entry --title "Recoding duration" --text "Please enter the screencast duration in seconds:" --width 200 --height 100 2>/dev/null)
+
+# Duration and output file
+if [ $USERDUR -gt 0 ]; then
+    D=$USERDUR
+else
+    D=$DEFDUR
+fi
+
+# Window geometry
+# This part has been edited and is using "xrectsel" for region selection.
+XWININFO=$(slop)
+W=$(echo $XWININFO | cut -d'x' -f 1)
+H=$(echo $XWININFO | cut -d'x' -f 2 | cut -d'+' -f 1)
+X=$(echo $XWININFO | cut -d'x' -f 2 | cut -d'+' -f 2 | cut -d'+' -f 1)
+Y=$(echo $XWININFO | rev | cut -d'+' -f 1 | rev)
+
+# Notify the user of recording time and delay
+notify-send -t $((1000*$DELAY)) "GIFRecorder" "Recording duration set to $D seconds. Recording will start in $DELAY seconds."
+
+#Actual recording
+sleep $DELAY
+
+# Notify the user of the start of recording.
+notify-send -t $((1000*$DEFDUR)) "GIFRecorder" "Recording gif"
+
+byzanz-record -c --verbose --delay=0 --duration=$D --x=$X --y=$Y --width=$W --height=$H $FILENAME
+
+# Notify the user of end of recording.
+notify-send "GIFRecorder" "Screencast saved to $FILENAME"
+
+# Open in nautilus
+nohup nautilus -w $FILENAME > /dev/null 2>&1 &
